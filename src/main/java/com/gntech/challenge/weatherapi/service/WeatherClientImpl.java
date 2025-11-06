@@ -2,7 +2,9 @@ package com.gntech.challenge.weatherapi.service;
 
 import com.gntech.challenge.weatherapi.dto.OpenWeatherResponse;
 import com.gntech.challenge.weatherapi.dto.WeatherDTO;
+import com.gntech.challenge.weatherapi.exception.WeatherException;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
@@ -24,6 +26,7 @@ public class WeatherClientImpl implements WeatherClient {
 
     @Override
     public WeatherDTO getWeather(String city) {
+
         if (apiKey == null || apiKey.isBlank()) {
             throw new IllegalStateException("OPENWEATHER_API_KEY não configurada");
         }
@@ -32,11 +35,26 @@ public class WeatherClientImpl implements WeatherClient {
         Mono<OpenWeatherResponse> response = webClient.get()
                 .uri(url)
                 .retrieve()
+                .onStatus(
+                        status -> status.is4xxClientError(),
+                        clientResponse -> {
+                            return clientResponse.bodyToMono(String.class)
+                                    .map(body -> new WeatherException("Cidade não encontrada ou inválida.", HttpStatus.valueOf(clientResponse.statusCode().value())));
+                        }
+                )
+                .onStatus(
+                        status -> status.is5xxServerError(),
+                        clientResponse -> {
+                            return clientResponse.bodyToMono(String.class)
+                                    .map(body -> new WeatherException("Erro no servidor do OpenWeather. Tente novamente mais tarde.", HttpStatus.valueOf(clientResponse.statusCode().value())));
+                        }
+                )
                 .bodyToMono(OpenWeatherResponse.class);
 
         OpenWeatherResponse openWeather = response.block();
         if (openWeather == null) {
-            throw new IllegalStateException("Não foi possível obter dados do OpenWeather para a cidade: " + city);
+            throw new WeatherException("Não foi possível obter dados do OpenWeather", HttpStatus.INTERNAL_SERVER_ERROR
+            );
         }
         return toWeatherDTO(openWeather);
     }
