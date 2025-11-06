@@ -1,6 +1,7 @@
 package com.gntech.challenge.weatherapi.service;
 
 import com.gntech.challenge.weatherapi.dto.OpenWeatherResponse;
+import com.gntech.challenge.weatherapi.dto.WeatherDTO;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -22,7 +23,7 @@ public class WeatherClientImpl implements WeatherClient {
     }
 
     @Override
-    public OpenWeatherResponse getWeather(String city) {
+    public WeatherDTO getWeather(String city) {
         if (apiKey == null || apiKey.isBlank()) {
             throw new IllegalStateException("OPENWEATHER_API_KEY não configurada");
         }
@@ -33,7 +34,25 @@ public class WeatherClientImpl implements WeatherClient {
                 .retrieve()
                 .bodyToMono(OpenWeatherResponse.class);
 
-        return response.block();
+        OpenWeatherResponse openWeather = response.block();
+        if (openWeather == null) {
+            throw new IllegalStateException("Não foi possível obter dados do OpenWeather para a cidade: " + city);
+        }
+        return toWeatherDTO(openWeather);
     }
+
+    private WeatherDTO toWeatherDTO(OpenWeatherResponse openWeather) {
+        return new WeatherDTO(
+                openWeather.name,
+                openWeather.sys != null ? openWeather.sys.country : null,
+                openWeather.main != null ? openWeather.main.temp : null,
+                openWeather.main != null ? openWeather.main.humidity : null,
+                openWeather.wind != null ? openWeather.wind.speed : null,
+                (openWeather.weather != null && openWeather.weather.length > 0)
+                        ? openWeather.weather[0].description : null,
+                java.time.LocalDateTime.now()
+        );
+    }
+
 }
 

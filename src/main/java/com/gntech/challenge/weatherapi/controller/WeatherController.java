@@ -1,6 +1,7 @@
 package com.gntech.challenge.weatherapi.controller;
 
 import com.gntech.challenge.weatherapi.dto.OpenWeatherResponse;
+import com.gntech.challenge.weatherapi.dto.WeatherDTO;
 import com.gntech.challenge.weatherapi.service.WeatherClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -18,7 +19,7 @@ public class WeatherController {
     }
 
     @GetMapping("/fetch")
-    public OpenWeatherResponse fetch(@RequestParam String city) {
+    public WeatherDTO fetch(@RequestParam String city) {
         return weatherClient.getWeather(city);
     }
 }
