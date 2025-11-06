@@ -3,6 +3,7 @@ package com.gntech.challenge.weatherapi.service;
 import com.gntech.challenge.weatherapi.dto.OpenWeatherResponse;
 import com.gntech.challenge.weatherapi.dto.WeatherDTO;
 import com.gntech.challenge.weatherapi.exception.WeatherException;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
@@ -10,6 +11,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
 @Component
+@Slf4j
 public class WeatherClientImpl implements WeatherClient {
 
     private final WebClient webClient;
@@ -28,16 +30,20 @@ public class WeatherClientImpl implements WeatherClient {
     public WeatherDTO getWeather(String city) {
 
         if (apiKey == null || apiKey.isBlank()) {
+            log.error("OPENWEATHER_API_KEY não configurada");
             throw new IllegalStateException("OPENWEATHER_API_KEY não configurada");
         }
 
+        log.info("Iniciando requisição para OpenWeather API. Cidade: {}", city);
         String url = String.format("%s?q=%s&appid=%s&units=metric", apiUrl, city, apiKey);
+
         Mono<OpenWeatherResponse> response = webClient.get()
                 .uri(url)
                 .retrieve()
                 .onStatus(
                         status -> status.is4xxClientError(),
                         clientResponse -> {
+                            log.warn("Erro 4xx ao consultar OpenWeather para '{}': status {}", city, clientResponse.statusCode());
                             return clientResponse.bodyToMono(String.class)
                                     .map(body -> new WeatherException("Cidade não encontrada ou inválida.", HttpStatus.valueOf(clientResponse.statusCode().value())));
                         }
@@ -45,6 +51,7 @@ public class WeatherClientImpl implements WeatherClient {
                 .onStatus(
                         status -> status.is5xxServerError(),
                         clientResponse -> {
+                            log.error("Erro 5xx ao consultar OpenWeather para '{}': status {}", city, clientResponse.statusCode());
                             return clientResponse.bodyToMono(String.class)
                                     .map(body -> new WeatherException("Erro no servidor do OpenWeather. Tente novamente mais tarde.", HttpStatus.valueOf(clientResponse.statusCode().value())));
                         }
@@ -53,10 +60,13 @@ public class WeatherClientImpl implements WeatherClient {
 
         OpenWeatherResponse openWeather = response.block();
         if (openWeather == null) {
+            log.error("Não foi possível obter dados do OpenWeather para '{}'", city);
             throw new WeatherException("Não foi possível obter dados do OpenWeather", HttpStatus.INTERNAL_SERVER_ERROR
             );
         }
-        return toWeatherDTO(openWeather);
+        WeatherDTO weather = toWeatherDTO(openWeather);
+        log.info("Dados recebidos do OpenWeather para '{}': {}", city, weather);
+        return weather;
     }
 
     private WeatherDTO toWeatherDTO(OpenWeatherResponse openWeather) {

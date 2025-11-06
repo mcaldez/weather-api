@@ -1,9 +1,11 @@
 package com.gntech.challenge.weatherapi.service;
 
 import com.gntech.challenge.weatherapi.dto.WeatherDTO;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 @Service
+@Slf4j
 public class WeatherService {
 
     private final WeatherClient weatherClient;
@@ -15,7 +17,11 @@ public class WeatherService {
     public WeatherDTO getWeather(String city) {
 
         String formattedCity = formatCityName(city);
-        return weatherClient.getWeather(formattedCity);
+        log.info("Cidade formatada para requisição: '{}'", formattedCity);
+
+        WeatherDTO weather = weatherClient.getWeather(formattedCity);
+        log.info("Dados recebidos do WeatherClient: {}", weather);
+        return weather;
     }
 
     private String formatCityName(String city) {
