@@ -2,8 +2,11 @@ package com.gntech.challenge.weatherapi;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.cloud.openfeign.EnableFeignClients;
+
 
 @SpringBootApplication
+@EnableFeignClients(basePackages = "com.gntech.challenge.weatherapi.service")
 public class WeatherApiApplication {
 
     public static void main(String[] args) {

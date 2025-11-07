@@ -1,5 +1,6 @@
 package com.gntech.challenge.weatherapi.service;
 
+import com.gntech.challenge.weatherapi.dto.OpenWeatherResponse;
 import com.gntech.challenge.weatherapi.dto.WeatherDTO;
 import com.gntech.challenge.weatherapi.entity.WeatherEntity;
 import com.gntech.challenge.weatherapi.exception.WeatherException;
@@ -11,10 +12,10 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Pageable;
+import org.springframework.beans.factory.annotation.Value;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 
 @Service
 @Slf4j
@@ -22,11 +23,13 @@ public class WeatherService {
 
     private final WeatherClient weatherClient;
     private final WeatherRepository weatherRepository;
+    private final String apiKey;
 
 
-    public WeatherService(WeatherClient weatherClient, WeatherRepository weatherRepository) {
+    public WeatherService(WeatherClient weatherClient, WeatherRepository weatherRepository, @Value("${openweather.api.key}") String apiKey) {
         this.weatherClient = weatherClient;
         this.weatherRepository = weatherRepository;
+        this.apiKey = apiKey;
     }
 
     @Transactional
@@ -34,7 +37,12 @@ public class WeatherService {
         String formattedCity = formatCityName(city);
         log.info("Buscando dados de clima para '{}'", formattedCity);
 
-        WeatherDTO weatherDTO = weatherClient.getWeather(formattedCity);
+        OpenWeatherResponse response = weatherClient.getWeather(formattedCity, apiKey, "metric");
+        if (response == null) {
+            throw new WeatherException("Resposta vazia do OpenWeather", HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+
+        WeatherDTO weatherDTO = mapToDTO(response);
         log.info("Dados recebidos do WeatherClient para '{}': {}", formattedCity, weatherDTO);
 
         persistWeatherData(weatherDTO);
@@ -45,17 +53,17 @@ public class WeatherService {
     public List<WeatherDTO> getAllWeather(int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("timestamp").descending());
         return weatherRepository.findAll(pageable).stream()
-                .map(this::mapToDTO)
+                .map(this::mapToDTO) // mapeia WeatherEntity → WeatherDTO
                 .toList();
     }
 
     public List<WeatherDTO> getWeatherByCity(String city) {
         return weatherRepository.findByCityIgnoreCase(city.trim()).stream()
-                .map(this::mapToDTO)
+                .map(this::mapToDTO) // mapeia WeatherEntity → WeatherDTO
                 .toList();
     }
 
-    public WeatherDTO  getLatestWeatherByCityOrThrow(String city) {
+    public WeatherDTO getLatestWeatherByCityOrThrow(String city) {
         return weatherRepository.findFirstByCityIgnoreCaseOrderByTimestampDesc(city.trim())
                 .map(this::mapToDTO)
                 .orElseThrow(() -> new WeatherException(
@@ -99,6 +107,19 @@ public class WeatherService {
                 entity.getWindSpeed(),
                 entity.getDescription(),
                 entity.getTimestamp()
+        );
+    }
+
+    private WeatherDTO mapToDTO(OpenWeatherResponse response) {
+        return new WeatherDTO(
+                response.name,
+                response.sys != null ? response.sys.country : null,
+                response.main != null ? response.main.temp : null,
+                response.main != null ? response.main.humidity : null,
+                response.wind != null ? response.wind.speed : null,
+                (response.weather != null && response.weather.length > 0)
+                        ? response.weather[0].description : null,
+                LocalDateTime.now()
         );
     }
 
