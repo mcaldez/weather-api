@@ -8,9 +8,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.Pageable;
 
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
 
 @Service
 @Slf4j
@@ -38,6 +42,24 @@ public class WeatherService {
         return weatherDTO;
     }
 
+    public List<WeatherDTO> getAllWeather(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("timestamp").descending());
+        return weatherRepository.findAll(pageable).stream()
+                .map(this::mapToDTO)
+                .toList();
+    }
+
+    public List<WeatherDTO> getWeatherByCity(String city) {
+        return weatherRepository.findByCityIgnoreCase(city.trim()).stream()
+                .map(this::mapToDTO)
+                .toList();
+    }
+
+    public Optional<WeatherDTO> getLatestWeatherByCity(String city) {
+        return weatherRepository.findFirstByCityIgnoreCaseOrderByTimestampDesc(city.trim())
+                .map(this::mapToDTO);
+    }
+
     private void persistWeatherData(WeatherDTO weatherDTO) {
         try {
             WeatherEntity entity = mapToEntity(weatherDTO);
@@ -61,6 +83,18 @@ public class WeatherService {
                 weatherDTO.getWindSpeed(),
                 weatherDTO.getDescription(),
                 LocalDateTime.now()
+        );
+    }
+
+    private WeatherDTO mapToDTO(WeatherEntity entity) {
+        return new WeatherDTO(
+                entity.getCity(),
+                entity.getCountry(),
+                entity.getTemperature(),
+                entity.getHumidity(),
+                entity.getWindSpeed(),
+                entity.getDescription(),
+                entity.getTimestamp()
         );
     }
 
