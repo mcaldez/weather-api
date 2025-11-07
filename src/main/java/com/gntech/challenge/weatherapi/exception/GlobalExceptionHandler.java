@@ -1,5 +1,6 @@
 package com.gntech.challenge.weatherapi.exception;
 
+import feign.FeignException;
 import jakarta.validation.ConstraintViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -7,7 +8,6 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.reactive.function.client.WebClientRequestException;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -58,12 +58,19 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
     }
 
-    @ExceptionHandler(WebClientRequestException.class)
-    public ResponseEntity<Map<String, Object>> handleWebClientRequestException(WebClientRequestException ex) {
+    @ExceptionHandler(FeignException.class)
+    public ResponseEntity<Map<String, Object>> handleFeignException(FeignException  ex) {
         Map<String, Object> body = new HashMap<>();
-        body.put("error", "Erro ao conectar à API externa: " + ex.getMessage());
+        body.put("error", "Erro ao chamar API externa: " + ex.getMessage());
+        body.put("status", ex.status());
         body.put("timestamp", LocalDateTime.now());
-        return new ResponseEntity<>(body, HttpStatus.BAD_GATEWAY);
+
+        HttpStatus status = HttpStatus.resolve(ex.status());
+        if (status == null) {
+            status = HttpStatus.BAD_GATEWAY;
+        }
+
+        return new ResponseEntity<>(body, status);
     }
 
     @ExceptionHandler(Exception.class)
