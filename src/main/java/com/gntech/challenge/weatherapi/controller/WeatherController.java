@@ -64,10 +64,6 @@ public class WeatherController {
             @Pattern(regexp = "^[A-Za-zÀ-ÿ\\s-]+$", message = "O nome da cidade contém caracteres inválidos.")
             String city) {
         log.info("Requisição GET /latest?city={} recebida", city);
-        return weatherService.getLatestWeatherByCity(city)
-                .orElseThrow(() -> new WeatherException(
-                        "Nenhum registro encontrado para a cidade " + city,
-                        HttpStatus.NOT_FOUND
-                ));
+        return weatherService.getLatestWeatherByCityOrThrow(city);
     }
 }

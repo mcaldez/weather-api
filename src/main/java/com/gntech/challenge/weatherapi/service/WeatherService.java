@@ -55,9 +55,13 @@ public class WeatherService {
                 .toList();
     }
 
-    public Optional<WeatherDTO> getLatestWeatherByCity(String city) {
+    public WeatherDTO  getLatestWeatherByCityOrThrow(String city) {
         return weatherRepository.findFirstByCityIgnoreCaseOrderByTimestampDesc(city.trim())
-                .map(this::mapToDTO);
+                .map(this::mapToDTO)
+                .orElseThrow(() -> new WeatherException(
+                        "Nenhum registro encontrado para a cidade " + city,
+                        HttpStatus.NOT_FOUND
+                ));
     }
 
     private void persistWeatherData(WeatherDTO weatherDTO) {
