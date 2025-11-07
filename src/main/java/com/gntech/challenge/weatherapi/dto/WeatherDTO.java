@@ -29,4 +29,17 @@ public class WeatherDTO {
     public Double getWindSpeed() { return windSpeed; }
     public String getDescription() { return description; }
     public LocalDateTime getDateTime() { return dateTime; }
+
+    @Override
+    public String toString() {
+        return "WeatherDTO{" +
+                "city='" + city + '\'' +
+                ", country='" + country + '\'' +
+                ", temperature=" + temperature + "°C" +
+                ", humidity=" + humidity + "%" +
+                ", windSpeed=" + windSpeed + " m/s" +
+                ", description='" + description + '\'' +
+                ", dateTime=" + dateTime +
+                '}';
+    }
 }
