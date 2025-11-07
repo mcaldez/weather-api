@@ -37,11 +37,11 @@ class WeatherControllerTest {
     WeatherDTO dto2 = new WeatherDTO("São Paulo", "BR", 28.0, 70.0, 3.5, "partly cloudy", LocalDateTime.now());
 
     @Test
-    void fetch_shouldReturnWeatherDTO() throws Exception {
+    void getCurrentWeather_shouldReturnWeatherDTO() throws Exception {
 
         when(weatherService.getWeather("Florianópolis")).thenReturn(dto1);
 
-        mockMvc.perform(get("/internal/weather/fetch")
+        mockMvc.perform(get("/internal/weather/current")
                         .param("city", "Florianópolis")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
@@ -75,7 +75,7 @@ class WeatherControllerTest {
 
         when(weatherService.getWeatherByCity("Florianópolis")).thenReturn(List.of(dto1, dto2));
 
-        mockMvc.perform(get("/internal/weather")
+        mockMvc.perform(get("/internal/weather/by-city")
                         .param("city", "Florianópolis")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
