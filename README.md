@@ -81,7 +81,7 @@ weather-api/
 
 ## ⚙️ Configuração do Arquivo `.env`
 
-Crie um arquivo `.env` na raiz do projeto com as variáveis abaixo:
+### Crie um arquivo `.env` na raiz do projeto com as variáveis abaixo:
 
 ```bash
 OPENWEATHER_API_KEY=sua_chave_aqui
@@ -99,7 +99,6 @@ comandos:
 ```
 git clone https://github.com/seu-usuario/weather-api.git
 cd weather-api
-cp .env.example .env
 docker compose up --build
 ```
 Isso irá iniciar:
