@@ -22,7 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 @RestController
-@RequestMapping("/internal/weather")
+@RequestMapping("/v1/weather")
 @Validated
 @Slf4j
 @Tag(name = "Weather API", description = "Operações para consultar e armazenar dados de clima")
